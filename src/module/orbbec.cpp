@@ -680,13 +680,15 @@ std::shared_ptr<ob::Config> createHwD2CAlignConfig(std::shared_ptr<ob::Pipeline>
 
 auto frameCallback(const std::string& serialNumber) {
     return [serialNumber](std::shared_ptr<ob::FrameSet> frameSet) {
-        if (frameSet->getCount() != 2) {
-            std::cerr << "got non 2 frame count: " << frameSet->getCount() << "\n";
+        // Allow 2 frames (color + depth) or 3 frames (color + depth + IR)
+        uint32_t frameCount = frameSet->getCount();
+        if (frameCount < 2 || frameCount > 3) {
+            std::cerr << "unexpected frame count: " << frameCount << " (expected 2 or 3)\n";
             return;
         }
         std::shared_ptr<ob::Frame> color = frameSet->getFrame(OB_FRAME_COLOR);
         if (color == nullptr) {
-            std::cerr << "no color frame\n" << frameSet->getCount() << "\n";
+            std::cerr << "no color frame\n";
             return;
         }
 

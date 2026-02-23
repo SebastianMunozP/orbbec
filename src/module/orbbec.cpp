@@ -1475,11 +1475,19 @@ vsdk::Camera::image_collection Orbbec::get_images(std::vector<std::string> filte
                     VIAM_RESOURCE_LOG(debug) << "[get_images] IR data is null";
                 } else {
                     auto irVid = ir->as<ob::VideoFrame>();
+                    uint32_t width = irVid->getWidth();
+                    uint32_t height = irVid->getHeight();
+                    uint32_t dataSize = irVid->getDataSize();
+                    auto format = irVid->getFormat();
+
+                    // Debug logging for IR frame properties
+                    VIAM_RESOURCE_LOG(info) << "[get_images] IR frame: " << width << "x" << height << " format=" << format
+                                            << " dataSize=" << dataSize << " expected=" << (width * height * 2);
 
                     vsdk::Camera::raw_image ir_image;
                     ir_image.source_name = kIRSourceName;
                     ir_image.mime_type = kIRMimeTypePNG;
-                    ir_image.bytes = encoding::encode_to_gray_png(irData, irVid->getWidth(), irVid->getHeight());
+                    ir_image.bytes = encoding::encode_to_gray_png(irData, width, height);
                     response.images.emplace_back(std::move(ir_image));
                 }
             }

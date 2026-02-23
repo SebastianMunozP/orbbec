@@ -1431,21 +1431,46 @@ vsdk::Camera::image_collection Orbbec::get_images(std::vector<std::string> filte
         std::shared_ptr<ob::Frame> ir = nullptr;
         uint64_t nowUs = getNowUs();
         std::optional<DeviceFormat> device_format_opt;
+        bool debug_ir_as_color = false;
         {
             std::lock_guard<std::mutex> lock(config_by_serial_mu());
             if (config_by_serial().count(serial_number) == 0) {
                 throw std::runtime_error("device with serial number " + serial_number + " is not in config_by_serial");
             }
             device_format_opt = config_by_serial().at(serial_number).device_format;
+            debug_ir_as_color = config_by_serial().at(serial_number).debug_ir_as_color;
         }
 
         if (should_process_color) {
-            color = fs->getFrame(OB_FRAME_COLOR);
-            validateColorFrame(color, device_format_opt, *model_config_);
+            if (debug_ir_as_color) {
+                // Debug mode: return IR as color stream
+                VIAM_RESOURCE_LOG(info) << "[get_images] debug_ir_as_color enabled - returning IR as color";
+                ir = fs->getFrame(OB_FRAME_IR);
+                if (ir == nullptr) {
+                    throw std::runtime_error("[get_images] IR frame not available (debug_ir_as_color mode)");
+                }
+                unsigned char* irData = (unsigned char*)ir->getData();
+                if (irData == nullptr) {
+                    throw std::runtime_error("[get_images] IR data is null (debug_ir_as_color mode)");
+                }
+                auto irVid = ir->as<ob::VideoFrame>();
+                uint32_t width = irVid->getWidth();
+                uint32_t height = irVid->getHeight();
 
-            vsdk::Camera::raw_image color_image = encodeColorFrame(color);
-            color_image.source_name = kColorSourceName;
-            response.images.emplace_back(std::move(color_image));
+                vsdk::Camera::raw_image color_image;
+                color_image.source_name = kColorSourceName;
+                color_image.mime_type = kIRMimeTypePNG;  // PNG for grayscale
+                color_image.bytes = encoding::encode_to_gray_png(irData, width, height);
+                response.images.emplace_back(std::move(color_image));
+            } else {
+                // Normal mode: return color
+                color = fs->getFrame(OB_FRAME_COLOR);
+                validateColorFrame(color, device_format_opt, *model_config_);
+
+                vsdk::Camera::raw_image color_image = encodeColorFrame(color);
+                color_image.source_name = kColorSourceName;
+                response.images.emplace_back(std::move(color_image));
+            }
         }
 
         if (should_process_depth) {
@@ -1824,7 +1849,19 @@ std::unique_ptr<orbbec::ObResourceConfig> Orbbec::configure(vsdk::Dependencies d
     } else {
         VIAM_SDK_LOG(info) << "[configure] no sensors specified in config, using defaults";
     }
-    auto native_config = std::make_unique<orbbec::ObResourceConfig>(serial_number_from_config, configuration.name(), dev_res, dev_fmt);
+
+    // Parse debug_ir_as_color flag
+    bool debug_ir_as_color = false;
+    if (attrs.count("debug_ir_as_color")) {
+        const bool* debug_val = attrs["debug_ir_as_color"].get<bool>();
+        if (debug_val) {
+            debug_ir_as_color = *debug_val;
+            VIAM_SDK_LOG(info) << "[configure] debug_ir_as_color enabled - IR will be returned as color stream";
+        }
+    }
+
+    auto native_config =
+        std::make_unique<orbbec::ObResourceConfig>(serial_number_from_config, configuration.name(), dev_res, dev_fmt, debug_ir_as_color);
     VIAM_SDK_LOG(info) << "[configure] configured: " << native_config->to_string();
     return native_config;
 }

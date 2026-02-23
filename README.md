@@ -30,7 +30,8 @@ The following attribute template can be used to configure this model:
       "height": 1080,
       "format": "RGB"
     }
-  }
+  },
+  "debug_ir_as_color": false
 }
 ```
 #### Configuration Attributes
@@ -41,6 +42,7 @@ The following attributes are available for the Astra 2 model:
 |---------------|--------|-----------|----------------------------|
 | `serial_number` | string | **Required** | The serial number of the specific Orbbec camera to use. This number is printed on the device. The serial number of each plugged-in and available orbbec camera will be logged on module startup.  |
 |`sensors` | struct | **Optional** | The configuration of the color and depth sensors |
+| `debug_ir_as_color` | boolean | **Optional** | Debug mode: when `true`, returns the infrared stream as the color stream. Useful for visualizing IR reflectance. Default: `false` |
 
 #### `sensor` attributes:
 | Name | Type | Inclusion | Description |
@@ -87,7 +89,8 @@ The following attribute template can be used to configure this model:
       "height": 1080,
       "format": "MJPG"
     }
-  }
+  },
+  "debug_ir_as_color": false
 }
 ```
 #### Configuration Attributes
@@ -98,6 +101,7 @@ The following attributes are available for the Gemini 335Le model:
 |---------------|--------|-----------|----------------------------|
 | `serial_number` | string | **Required** | The serial number of the specific Orbbec camera to use. This number is printed on the device. The serial number of each plugged-in and available orbbec camera will be logged on module startup.  |
 |`sensors` | struct | **Optional** | The configuration of the color and depth sensors |
+| `debug_ir_as_color` | boolean | **Optional** | Debug mode: when `true`, returns the infrared stream as the color stream. Useful for visualizing IR reflectance. Default: `false` |
 
 #### `sensor` attributes:
 | Name | Type | Inclusion | Description |

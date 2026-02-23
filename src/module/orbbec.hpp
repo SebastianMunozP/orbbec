@@ -72,12 +72,18 @@ struct ObResourceConfig {
     std::string serial_number;
     std::optional<DeviceResolution> device_resolution;
     std::optional<DeviceFormat> device_format;
+    bool debug_ir_as_color{false};  // Debug mode: return IR as color stream
 
     explicit ObResourceConfig(std::string const& serial_number,
                               std::string const& resource_name,
                               std::optional<DeviceResolution> device_resolution,
-                              std::optional<DeviceFormat> device_format)
-        : serial_number(serial_number), resource_name(resource_name), device_resolution(device_resolution), device_format(device_format) {}
+                              std::optional<DeviceFormat> device_format,
+                              bool debug_ir_as_color = false)
+        : serial_number(serial_number),
+          resource_name(resource_name),
+          device_resolution(device_resolution),
+          device_format(device_format),
+          debug_ir_as_color(debug_ir_as_color) {}
     std::string to_string() const {
         std::ostringstream os;
         os << "(resource_name=" << resource_name << ", serial_number=" << serial_number;
@@ -91,6 +97,7 @@ struct ObResourceConfig {
         } else {
             os << ", device_format=nullopt";
         }
+        os << ", debug_ir_as_color=" << (debug_ir_as_color ? "true" : "false");
         os << ")";
         return os.str();
     }

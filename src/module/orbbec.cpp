@@ -1452,7 +1452,7 @@ vsdk::Camera::image_collection Orbbec::get_images(std::vector<std::string> filte
 
         uint64_t const colorTSUs = color ? getBestTimestampUs(color) : 0;
         uint64_t const depthTSUs = depth ? getBestTimestampUs(depth) : 0;
-        uint64_t const irTS = ir ? ir->getSystemTimeStampUs() : 0;
+        uint64_t const irTSUs = ir ? getBestTimestampUs(ir) : 0;
         uint64_t const timeDiff = (colorTSUs > depthTSUs) ? colorTSUs - depthTSUs : depthTSUs - colorTSUs;
         uint64_t timestampUs = 0;
 
@@ -1487,10 +1487,10 @@ vsdk::Camera::image_collection Orbbec::get_images(std::vector<std::string> filte
             timestampUs = (colorTSUs > depthTSUs) ? depthTSUs : colorTSUs;
         } else if (colorTSUs > 0) {
             timestampUs = colorTSUs;
-        } else if (depthTS > 0) {
+        } else if (depthTSUs > 0) {
             timestampUs = depthTSUs;
         } else {
-            timestampUs = irTS;
+            timestampUs = irTSUs;
         }
 
         std::chrono::microseconds latestTimestampUs(timestampUs);

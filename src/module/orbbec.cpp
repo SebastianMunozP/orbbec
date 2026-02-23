@@ -570,6 +570,19 @@ std::shared_ptr<ob::Config> createSwD2CAlignConfig(std::shared_ptr<ob::Pipeline>
     auto config = std::make_shared<ob::Config>();
     config->enableStream(colorProfile);
     config->enableStream(depthProfile);
+
+    // Enable IR stream if available
+    try {
+        auto irStreamProfiles = pipe->getStreamProfileList(OB_SENSOR_IR);
+        if (irStreamProfiles && irStreamProfiles->getCount() > 0) {
+            auto irProfile = irStreamProfiles->getProfile(0);
+            config->enableStream(irProfile);
+            VIAM_SDK_LOG(info) << "IR stream enabled";
+        }
+    } catch (const std::exception& e) {
+        VIAM_SDK_LOG(debug) << "IR stream not available: " << e.what();
+    }
+
     config->setAlignMode(ALIGN_D2C_SW_MODE);  // Use software alignment
     config->setFrameAggregateOutputMode(OB_FRAME_AGGREGATE_OUTPUT_ALL_TYPE_FRAME_REQUIRE);
 
@@ -631,8 +644,21 @@ std::shared_ptr<ob::Config> createHwD2CAlignConfig(std::shared_ptr<ob::Pipeline>
                                    << " format: " << ob::TypeHelper::convertOBFormatTypeToString(depthVsp->getFormat()) << "\n";
                 // If support, create a config for hardware depth-to-color alignment
                 auto hwD2CAlignConfig = std::make_shared<ob::Config>();
-                hwD2CAlignConfig->enableStream(colorProfile);       // enable color stream
-                hwD2CAlignConfig->enableStream(depthProfile);       // enable depth stream
+                hwD2CAlignConfig->enableStream(colorProfile);  // enable color stream
+                hwD2CAlignConfig->enableStream(depthProfile);  // enable depth stream
+
+                // Enable IR stream if available
+                try {
+                    auto irStreamProfiles = pipe->getStreamProfileList(OB_SENSOR_IR);
+                    if (irStreamProfiles && irStreamProfiles->getCount() > 0) {
+                        auto irProfile = irStreamProfiles->getProfile(0);
+                        hwD2CAlignConfig->enableStream(irProfile);
+                        VIAM_SDK_LOG(info) << "IR stream enabled";
+                    }
+                } catch (const std::exception& e) {
+                    VIAM_SDK_LOG(debug) << "IR stream not available: " << e.what();
+                }
+
                 hwD2CAlignConfig->setAlignMode(ALIGN_D2C_HW_MODE);  // enable hardware depth-to-color alignment
                 hwD2CAlignConfig->setFrameAggregateOutputMode(OB_FRAME_AGGREGATE_OUTPUT_ALL_TYPE_FRAME_REQUIRE);
                 return hwD2CAlignConfig;
@@ -785,6 +811,18 @@ void configureDevice(std::string serialNumber, OrbbecModelConfig const& modelCon
                 config = std::make_shared<ob::Config>();
                 config->enableStream(colorStreamProfiles->getProfile(0));
                 config->enableStream(depthStreamProfiles->getProfile(0));
+
+                // Enable IR stream if available
+                try {
+                    auto irStreamProfiles = my_dev->pipe->getStreamProfileList(OB_SENSOR_IR);
+                    if (irStreamProfiles && irStreamProfiles->getCount() > 0) {
+                        config->enableStream(irStreamProfiles->getProfile(0));
+                        VIAM_SDK_LOG(info) << "IR stream enabled";
+                    }
+                } catch (const std::exception& e) {
+                    VIAM_SDK_LOG(debug) << "IR stream not available: " << e.what();
+                }
+
                 config->setFrameAggregateOutputMode(OB_FRAME_AGGREGATE_OUTPUT_ALL_TYPE_FRAME_REQUIRE);
                 VIAM_SDK_LOG(info) << "Created basic config for device " << serialNumber;
             } else {

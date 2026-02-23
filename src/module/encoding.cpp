@@ -112,16 +112,16 @@ std::vector<std::uint8_t> encode_to_gray_png(std::uint8_t const* const image_dat
     // Set color type to grayscale
     int color_type = PNG_COLOR_TYPE_GRAY;
 
-    // Write PNG header (16-bit grayscale for IR)
+    // Write PNG header (8-bit grayscale for IR - Orbbec IR is Y8 format)
     png_set_IHDR(
-        png_ptr, info_ptr, width, height, 16, color_type, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
+        png_ptr, info_ptr, width, height, 8, color_type, PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, PNG_FILTER_TYPE_DEFAULT);
 
     png_write_info(png_ptr, info_ptr);
 
-    // Write image data row by row (IR is 16-bit per pixel)
+    // Write image data row by row (IR is 8-bit per pixel)
     std::vector<png_bytep> row_pointers(height);
     for (uint32_t y = 0; y < height; y++) {
-        row_pointers[y] = const_cast<png_bytep>(&image_data[y * width * 2]);  // 2 bytes per pixel (16-bit)
+        row_pointers[y] = const_cast<png_bytep>(&image_data[y * width]);  // 1 byte per pixel (8-bit)
     }
 
     png_write_image(png_ptr, row_pointers.data());

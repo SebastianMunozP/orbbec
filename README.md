@@ -130,7 +130,7 @@ The following attributes are available for the Gemini 335Le model:
 |-------------|-----------|-------------|
 | `color` | `image/jpeg` or `image/png` | Color image from the RGB sensor |
 | `depth` | `image/vnd.viam.dep` | Depth map from the depth sensor |
-| `infrared` | `image/png` | 16-bit grayscale infrared image from the IR sensor |
+| `infrared` | `image/png` | 8-bit grayscale infrared image from the IR sensor |
 
 If `filter_source_names` is empty, all available streams (`color`, `depth`, and `infrared` if supported) are returned. If populated, only the matching source names are returned. Unrecognized names are ignored.
 

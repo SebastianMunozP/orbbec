@@ -59,8 +59,6 @@ const std::string kDepthSourceName = "depth";
 const std::string kDepthMimeTypeViamDep = "image/vnd.viam.dep";
 const std::string kIRSourceName = "infrared";
 const std::string kIRMimeTypePNG = "image/png";
-const std::string kIRSourceName = "infrared";
-const std::string kIRMimeTypePNG = "image/png";
 const std::string kPcdMimeType = "pointcloud/pcd";
 // If the firmwareUrl is changed to a new version, also change the minFirmwareVer const.
 constexpr char service_name[] = "viam_orbbec";

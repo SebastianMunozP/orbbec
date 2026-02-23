@@ -57,6 +57,8 @@ const std::string kColorMimeTypeJPEG = "image/jpeg";
 const std::string kColorMimeTypePNG = "image/png";
 const std::string kDepthSourceName = "depth";
 const std::string kDepthMimeTypeViamDep = "image/vnd.viam.dep";
+const std::string kIRSourceName = "infrared";
+const std::string kIRMimeTypePNG = "image/png";
 const std::string kPcdMimeType = "pointcloud/pcd";
 // If the firmwareUrl is changed to a new version, also change the minFirmwareVer const.
 constexpr char service_name[] = "viam_orbbec";
@@ -1363,10 +1365,12 @@ vsdk::Camera::image_collection Orbbec::get_images(std::vector<std::string> filte
 
         bool should_process_color = false;
         bool should_process_depth = false;
+        bool should_process_ir = false;
 
         if (filter_source_names.empty()) {
             should_process_color = true;
             should_process_depth = true;
+            should_process_ir = true;
         } else {
             for (const auto& name : filter_source_names) {
                 if (name == kColorSourceName) {
@@ -1375,12 +1379,16 @@ vsdk::Camera::image_collection Orbbec::get_images(std::vector<std::string> filte
                 if (name == kDepthSourceName) {
                     should_process_depth = true;
                 }
+                if (name == kIRSourceName) {
+                    should_process_ir = true;
+                }
             }
         }
 
         vsdk::Camera::image_collection response;
         std::shared_ptr<ob::Frame> color = nullptr;
         std::shared_ptr<ob::Frame> depth = nullptr;
+        std::shared_ptr<ob::Frame> ir = nullptr;
         uint64_t nowUs = getNowUs();
         std::optional<DeviceFormat> device_format_opt;
         {
@@ -1417,6 +1425,26 @@ vsdk::Camera::image_collection Orbbec::get_images(std::vector<std::string> filte
             response.images.emplace_back(std::move(depth_image));
         }
 
+        if (should_process_ir) {
+            ir = fs->getFrame(OB_FRAME_IR);
+            if (ir == nullptr) {
+                VIAM_RESOURCE_LOG(debug) << "[get_images] IR frame not available";
+            } else {
+                unsigned char* irData = (unsigned char*)ir->getData();
+                if (irData == nullptr) {
+                    VIAM_RESOURCE_LOG(debug) << "[get_images] IR data is null";
+                } else {
+                    auto irVid = ir->as<ob::VideoFrame>();
+
+                    vsdk::Camera::raw_image ir_image;
+                    ir_image.source_name = kIRSourceName;
+                    ir_image.mime_type = kIRMimeTypePNG;
+                    ir_image.bytes = encoding::encode_to_gray_png(irData, irVid->getWidth(), irVid->getHeight());
+                    response.images.emplace_back(std::move(ir_image));
+                }
+            }
+        }
+
         if (response.images.empty()) {
             VIAM_RESOURCE_LOG(error) << "[get_images] error: no camera sources matched the filter";
             return response;
@@ -1424,6 +1452,7 @@ vsdk::Camera::image_collection Orbbec::get_images(std::vector<std::string> filte
 
         uint64_t const colorTSUs = color ? getBestTimestampUs(color) : 0;
         uint64_t const depthTSUs = depth ? getBestTimestampUs(depth) : 0;
+        uint64_t const irTS = ir ? ir->getSystemTimeStampUs() : 0;
         uint64_t const timeDiff = (colorTSUs > depthTSUs) ? colorTSUs - depthTSUs : depthTSUs - colorTSUs;
         uint64_t timestampUs = 0;
 
@@ -1458,8 +1487,10 @@ vsdk::Camera::image_collection Orbbec::get_images(std::vector<std::string> filte
             timestampUs = (colorTSUs > depthTSUs) ? depthTSUs : colorTSUs;
         } else if (colorTSUs > 0) {
             timestampUs = colorTSUs;
-        } else {
+        } else if (depthTS > 0) {
             timestampUs = depthTSUs;
+        } else {
+            timestampUs = irTS;
         }
 
         std::chrono::microseconds latestTimestampUs(timestampUs);
